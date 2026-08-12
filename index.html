@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AgriStack Bandipora — Tehsil Sumbal</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Segoe UI', Arial, sans-serif;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #1F4E78 0%, #2E7D32 100%);
+    color: #222;
+    padding: 20px;
+    line-height: 1.6;
+  }
+  .container {
+    max-width: 720px;
+    width: 100%;
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.15);
+    overflow: hidden;
+  }
+  .header {
+    background: linear-gradient(135deg, #1F4E78 0%, #4A148C 100%);
+    color: #fff;
+    padding: 32px 32px 28px;
+    text-align: center;
+  }
+  .header h1 { font-size: 24px; margin-bottom: 6px; }
+  .header .subtitle { font-size: 14px; opacity: 0.9; }
+  .header .badge {
+    display: inline-block;
+    margin-top: 12px;
+    padding: 4px 12px;
+    background: rgba(255,255,255,0.15);
+    border-radius: 12px;
+    font-size: 12px;
+    letter-spacing: 0.4px;
+    text-transform: uppercase;
+    font-weight: 600;
+  }
+  .content { padding: 32px; }
+  .content p {
+    color: #444;
+    font-size: 15px;
+    margin-bottom: 16px;
+  }
+  .section {
+    background: #f8fafc;
+    border-left: 4px solid #1F4E78;
+    padding: 18px 20px;
+    border-radius: 6px;
+    margin-bottom: 20px;
+  }
+  .section.admin { border-left-color: #4A148C; }
+  .section.patwari { border-left-color: #2E7D32; }
+  .section h3 {
+    font-size: 15px;
+    margin-bottom: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+  }
+  .section .section-desc {
+    font-size: 14px;
+    color: #555;
+    margin: 0 0 12px 0;
+  }
+  .section.admin h3 { color: #4A148C; }
+  .section.patwari h3 { color: #2E7D32; }
+  .btn {
+    display: inline-block;
+    padding: 10px 20px;
+    background: #1F4E78;
+    color: #fff;
+    text-decoration: none;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 600;
+    transition: background 0.15s;
+  }
+  .btn:hover { background: #17395a; }
+  .btn.admin { background: #4A148C; }
+  .btn.admin:hover { background: #38106b; }
+  .footer {
+    background: #f4f6f8;
+    padding: 14px 32px;
+    font-size: 12px;
+    color: #666;
+    text-align: center;
+    border-top: 1px solid #e0e4e8;
+  }
+  code {
+    background: #eef2f6;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 13px;
+  }
+</style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>AgriStack Landholder Data Portal</h1>
+      <div class="subtitle">Tehsil Sumbal · District Bandipora · Jammu &amp; Kashmir</div>
+      <div class="badge">Aadhaar Seeding Initiative</div>
+    </div>
+
+    <div class="content">
+      <p>
+        This portal supports the Aadhaar-linked landholder data collection drive
+        for the 109 villages of Tehsil Sumbal, under the AgriStack framework.
+      </p>
+
+      <div class="section admin">
+        <h3>Administrator / Tehsildar</h3>
+        <p class="section-desc">
+          Monitor tehsil-wide progress, drill into village-wise data collection status,
+          and view per-worker contribution.
+        </p>
+        <a class="btn admin" href="admin.html">Open Admin Dashboard →</a>
+      </div>
+
+      <div class="section patwari">
+        <h3>Patwari / Field Worker</h3>
+        <p class="section-desc">
+          Please use the URL provided to you for your assigned village
+          (for example, <code>/malikpora.html</code>). Contact the tehsil office
+          if you don't have your login credentials.
+        </p>
+      </div>
+    </div>
+
+    <div class="footer">
+      Office of the Tehsildar, Sumbal · For internal government use
+    </div>
+  </div>
+</body>
+</html>

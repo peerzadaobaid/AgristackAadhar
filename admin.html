@@ -1,0 +1,817 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AgriStack Admin — Tehsil Sumbal</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Segoe UI', Arial, sans-serif;
+    background: #f4f6f8;
+    color: #222;
+    line-height: 1.5;
+  }
+
+  /* ---------- LOGIN ---------- */
+  #login-screen {
+    min-height: 100vh;
+    display: flex; align-items: center; justify-content: center;
+    background: linear-gradient(135deg, #4A148C 0%, #1F4E78 100%);
+    padding: 20px;
+  }
+  .login-card {
+    background: #fff; padding: 40px 32px;
+    border-radius: 12px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.15);
+    width: 100%; max-width: 400px;
+  }
+  .login-card h1 {
+    font-size: 22px; color: #4A148C;
+    margin-bottom: 6px; text-align: center;
+  }
+  .login-card .subtitle {
+    text-align: center; color: #666; font-size: 14px; margin-bottom: 28px;
+  }
+  .form-group { margin-bottom: 16px; }
+  .form-group label {
+    display: block; font-size: 13px; font-weight: 600; color: #444; margin-bottom: 6px;
+  }
+  .form-group input {
+    width: 100%; padding: 10px 12px;
+    border: 1px solid #d0d5da; border-radius: 6px;
+    font-size: 14px; font-family: inherit;
+  }
+  .form-group input:focus {
+    outline: none; border-color: #4A148C;
+    box-shadow: 0 0 0 3px rgba(74,20,140,0.12);
+  }
+  .btn {
+    padding: 10px 18px; border: none; border-radius: 6px;
+    font-size: 14px; font-weight: 600;
+    cursor: pointer; transition: background 0.15s; font-family: inherit;
+  }
+  .btn-primary {
+    background: #4A148C; color: #fff; width: 100%; padding: 12px;
+  }
+  .btn-primary:hover { background: #38106b; }
+  .btn-primary:disabled { background: #a89bbb; cursor: not-allowed; }
+  .btn-secondary {
+    background: #fff; color: #4A148C; border: 1px solid #4A148C;
+  }
+  .btn-secondary:hover { background: #f4f0f8; }
+  .btn-small {
+    padding: 6px 12px; font-size: 13px;
+  }
+  .error-msg {
+    color: #c62828; font-size: 13px;
+    margin-top: 10px; text-align: center; min-height: 18px;
+  }
+
+  /* ---------- MAIN ---------- */
+  #main-screen { display: none; }
+  .topbar {
+    background: #4A148C; color: #fff;
+    padding: 14px 24px;
+    display: flex; align-items: center; justify-content: space-between;
+    flex-wrap: wrap; gap: 12px;
+  }
+  .topbar h2 { font-size: 18px; }
+  .topbar .tehsil-tag {
+    opacity: 0.85; font-size: 13px; margin-left: 8px;
+    padding: 3px 10px; background: rgba(255,255,255,0.15); border-radius: 10px;
+  }
+  .topbar .user-info {
+    display: flex; align-items: center; gap: 14px; font-size: 14px;
+  }
+  .topbar .user-info a { color: #fff; text-decoration: underline; cursor: pointer; }
+  .topbar button {
+    background: rgba(255,255,255,0.15); color: #fff;
+    border: 1px solid rgba(255,255,255,0.3);
+    padding: 6px 14px; border-radius: 4px;
+    font-size: 13px; cursor: pointer; font-family: inherit;
+  }
+  .topbar button:hover { background: rgba(255,255,255,0.25); }
+  .topbar button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  /* ---------- OVERALL STATS ---------- */
+  .stats-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 16px;
+    padding: 20px 24px;
+    background: #fff;
+    border-bottom: 1px solid #e0e4e8;
+  }
+  .stat-card {
+    padding: 16px;
+    border-radius: 8px;
+    border-left: 4px solid #4A148C;
+    background: #fafafa;
+  }
+  .stat-card.villages { border-left-color: #1F4E78; }
+  .stat-card.records  { border-left-color: #6A1B9A; }
+  .stat-card.filled   { border-left-color: #2E7D32; }
+  .stat-card.pending  { border-left-color: #C65911; }
+  .stat-card.overall  { border-left-color: #E65100; grid-column: 1 / -1; }
+  .stat-card .label {
+    font-size: 12px; color: #666;
+    text-transform: uppercase; letter-spacing: 0.5px;
+    font-weight: 600;
+  }
+  .stat-card .value {
+    font-size: 28px; font-weight: 700; color: #222;
+    margin-top: 4px;
+  }
+  .stat-card .sublabel { font-size: 12px; color: #888; margin-top: 2px; }
+  .overall-progress {
+    margin-top: 12px;
+    height: 14px;
+    background: #e0e4e8;
+    border-radius: 7px;
+    overflow: hidden;
+  }
+  .overall-progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #2E7D32, #66BB6A);
+    transition: width 0.5s;
+  }
+  .overall-progress-text {
+    font-size: 14px;
+    margin-top: 6px;
+    font-weight: 600;
+    color: #444;
+  }
+
+  /* ---------- TOOLBAR ---------- */
+  .toolbar {
+    background: #fff; padding: 14px 24px;
+    border-bottom: 1px solid #e0e4e8;
+    display: flex; gap: 12px; align-items: center; flex-wrap: wrap;
+  }
+  .toolbar input[type="text"] {
+    flex: 1; min-width: 240px;
+    padding: 9px 12px;
+    border: 1px solid #d0d5da; border-radius: 6px; font-size: 14px;
+  }
+  .toolbar select {
+    padding: 9px 12px;
+    border: 1px solid #d0d5da; border-radius: 6px; font-size: 14px; background: #fff;
+  }
+  .toolbar .last-updated {
+    font-size: 12px; color: #666; margin-left: auto;
+  }
+
+  /* ---------- TABLE ---------- */
+  .table-wrap { padding: 20px 24px; overflow-x: auto; }
+  table {
+    width: 100%; background: #fff; border-collapse: collapse;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+    border-radius: 8px; overflow: hidden; font-size: 13px;
+  }
+  thead th {
+    background: #4A148C; color: #fff;
+    padding: 12px 10px; text-align: left;
+    font-weight: 600; white-space: nowrap;
+    font-size: 12px; text-transform: uppercase; letter-spacing: 0.3px;
+    cursor: pointer; user-select: none;
+  }
+  thead th:hover { background: #38106b; }
+  thead th .sort-arrow { font-size: 10px; margin-left: 4px; opacity: 0.7; }
+  tbody tr {
+    border-bottom: 1px solid #eef0f2;
+    cursor: pointer; transition: background 0.1s;
+  }
+  tbody tr:hover { background: #f8fafc; }
+  tbody td { padding: 12px 10px; vertical-align: middle; }
+  .village-name {
+    font-weight: 700; color: #4A148C;
+    text-transform: capitalize;
+  }
+  .village-code {
+    font-size: 11px; color: #888;
+    display: block; margin-top: 2px;
+    font-weight: normal;
+  }
+  .num-cell { text-align: right; font-variant-numeric: tabular-nums; }
+  .progress-cell {
+    min-width: 160px;
+  }
+  .progress-bar-mini {
+    height: 8px; background: #e0e4e8;
+    border-radius: 4px; overflow: hidden;
+    margin-bottom: 4px;
+  }
+  .progress-fill-mini {
+    height: 100%;
+    transition: width 0.3s;
+  }
+  .progress-fill-mini.done   { background: linear-gradient(90deg, #2E7D32, #66BB6A); }
+  .progress-fill-mini.midway { background: linear-gradient(90deg, #F57C00, #FFB300); }
+  .progress-fill-mini.low    { background: linear-gradient(90deg, #C62828, #EF5350); }
+  .progress-pct {
+    font-size: 12px; font-weight: 700;
+    color: #444;
+  }
+  .last-activity {
+    font-size: 12px; color: #666;
+  }
+  .last-activity.stale { color: #C65911; }
+  .empty-state {
+    text-align: center; padding: 40px 20px;
+    color: #888; font-size: 14px;
+  }
+  .loading-state {
+    text-align: center; padding: 40px 20px;
+    color: #666;
+  }
+  .loading-spinner {
+    display: inline-block;
+    width: 20px; height: 20px;
+    border: 3px solid #e0e4e8;
+    border-top-color: #4A148C;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin-right: 10px;
+    vertical-align: middle;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ---------- MODAL ---------- */
+  .modal-overlay {
+    display: none;
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 100;
+    align-items: center; justify-content: center;
+    padding: 20px;
+  }
+  .modal-overlay.active { display: flex; }
+  .modal {
+    background: #fff; border-radius: 10px;
+    max-width: 720px; width: 100%;
+    max-height: 85vh;
+    display: flex; flex-direction: column;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.25);
+  }
+  .modal-header {
+    padding: 18px 22px;
+    border-bottom: 1px solid #e0e4e8;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .modal-header h3 {
+    color: #4A148C; font-size: 18px;
+  }
+  .modal-header .close-btn {
+    background: none; border: none;
+    font-size: 24px; cursor: pointer;
+    color: #888; line-height: 1;
+  }
+  .modal-body {
+    padding: 18px 22px;
+    overflow-y: auto;
+    flex: 1;
+  }
+  .modal-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+  .modal-stat {
+    background: #f4f6f8; padding: 12px;
+    border-radius: 6px;
+    text-align: center;
+  }
+  .modal-stat .label {
+    font-size: 11px; color: #666;
+    text-transform: uppercase; font-weight: 600;
+  }
+  .modal-stat .value {
+    font-size: 22px; font-weight: 700; color: #4A148C;
+    margin-top: 4px;
+  }
+  .worker-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+    font-size: 13px;
+  }
+  .worker-table th, .worker-table td {
+    padding: 8px 12px;
+    text-align: left;
+    border-bottom: 1px solid #eef0f2;
+  }
+  .worker-table th {
+    background: #f4f6f8;
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 11px;
+    letter-spacing: 0.3px;
+  }
+  .worker-table td.num { text-align: right; font-variant-numeric: tabular-nums; }
+  .modal-section-title {
+    font-size: 13px; font-weight: 700; color: #444;
+    text-transform: uppercase; letter-spacing: 0.4px;
+    margin-top: 20px; margin-bottom: 8px;
+  }
+
+  /* ---------- TOAST ---------- */
+  .toast {
+    position: fixed; bottom: 24px; right: 24px;
+    padding: 12px 20px; background: #2E7D32; color: #fff;
+    border-radius: 6px; font-size: 14px;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.2);
+    z-index: 200; opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.25s, transform 0.25s;
+  }
+  .toast.show { opacity: 1; transform: translateY(0); }
+  .toast.error { background: #c62828; }
+
+  @media (max-width: 640px) {
+    .topbar { padding: 12px 16px; }
+    .toolbar, .table-wrap, .stats-row { padding: 12px 16px; }
+    thead th, tbody td { padding: 8px 6px; font-size: 12px; }
+    .stat-card .value { font-size: 22px; }
+    .hide-mobile { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ============ LOGIN SCREEN ============ -->
+<div id="login-screen">
+  <div class="login-card">
+    <h1>AgriStack Admin</h1>
+    <div class="subtitle">Tehsil Sumbal · Bandipora</div>
+    <div class="form-group">
+      <label for="login-user">Admin username</label>
+      <input type="text" id="login-user" autocomplete="username">
+    </div>
+    <div class="form-group">
+      <label for="login-pass">Password</label>
+      <input type="password" id="login-pass" autocomplete="current-password">
+    </div>
+    <button class="btn btn-primary" onclick="handleLogin()">Sign in</button>
+    <div class="error-msg" id="login-error"></div>
+  </div>
+</div>
+
+<!-- ============ MAIN SCREEN ============ -->
+<div id="main-screen">
+  <div class="topbar">
+    <div>
+      <h2>AgriStack Admin Dashboard <span class="tehsil-tag">Tehsil Sumbal</span></h2>
+    </div>
+    <div class="user-info">
+      <button onclick="loadSummary()" id="refresh-btn">↻ Refresh</button>
+      <span>Signed in as: <strong id="current-user"></strong></span>
+      <a onclick="handleLogout()">Sign out</a>
+    </div>
+  </div>
+
+  <div class="stats-row" id="stats-row">
+    <div class="loading-state" style="grid-column: 1 / -1;">
+      <span class="loading-spinner"></span> Loading summary…
+    </div>
+  </div>
+
+  <div class="toolbar">
+    <input type="text" id="search-box" placeholder="Search villages by name or code…">
+    <select id="sort-select">
+      <option value="percent_asc">Least complete first</option>
+      <option value="percent_desc">Most complete first</option>
+      <option value="name_asc">Name (A–Z)</option>
+      <option value="name_desc">Name (Z–A)</option>
+      <option value="pending_desc">Most pending first</option>
+      <option value="last_updated_desc">Recently updated first</option>
+    </select>
+    <span class="last-updated" id="last-updated"></span>
+  </div>
+
+  <div class="table-wrap">
+    <table id="villages-table">
+      <thead>
+        <tr>
+          <th style="width: 40px;">#</th>
+          <th>Village</th>
+          <th class="num-cell">Total</th>
+          <th class="num-cell">Filled</th>
+          <th class="num-cell">Pending</th>
+          <th>Progress</th>
+          <th class="hide-mobile">Last activity</th>
+        </tr>
+      </thead>
+      <tbody id="villages-tbody">
+        <tr><td colspan="7" class="loading-state">
+          <span class="loading-spinner"></span> Loading villages…
+        </td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ============ MODAL — village detail ============ -->
+<div class="modal-overlay" id="detail-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="modal-village-name">Village</h3>
+      <button class="close-btn" onclick="closeModal()">×</button>
+    </div>
+    <div class="modal-body" id="modal-body">
+      <div class="loading-state">
+        <span class="loading-spinner"></span> Loading detail…
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ==========================================================
+// CONFIG — paste your deployed Apps Script Web App URL here
+// ==========================================================
+const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxKaI7mdr6tAmQDFrqZR5fu3INYLSVp9xLSbKNK1cwupnrwcnxvCr0nVHUQ4zshCDZ5/exec";
+
+// ==========================================================
+// STATE
+// ==========================================================
+let sessionToken = null;
+let currentUser = null;
+let userRole = null;
+let summaryData = null;
+
+// ==========================================================
+// LOGIN
+// ==========================================================
+async function handleLogin() {
+  const u = document.getElementById('login-user').value.trim();
+  const p = document.getElementById('login-pass').value;
+  const err = document.getElementById('login-error');
+  const btn = document.querySelector('#login-screen .btn-primary');
+  if (!u || !p) { err.textContent = "Enter username and password."; return; }
+  if (APPS_SCRIPT_URL.indexOf('PASTE_YOUR_APPS_SCRIPT_URL_HERE') === 0) {
+    err.textContent = "Backend URL not configured. Contact administrator.";
+    return;
+  }
+
+  err.textContent = '';
+  btn.disabled = true;
+  btn.textContent = 'Signing in…';
+
+  try {
+    const res = await apiCall({ action: 'login', username: u, password: p });
+    if (!res.ok) {
+      err.textContent = res.error || 'Login failed.';
+      return;
+    }
+    if (res.user.role !== 'admin' && res.user.role !== 'tehsildar') {
+      err.textContent = 'This dashboard requires admin access.';
+      return;
+    }
+    currentUser  = res.user.username;
+    sessionToken = res.token;
+    userRole     = res.user.role;
+
+    document.getElementById('current-user').textContent = currentUser + ' (' + userRole + ')';
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('main-screen').style.display  = 'block';
+
+    await loadSummary();
+  } catch (e) {
+    err.textContent = 'Network error — check connection and try again.';
+    console.error(e);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Sign in';
+  }
+}
+
+function handleLogout() {
+  sessionToken = null;
+  currentUser = null;
+  userRole = null;
+  summaryData = null;
+  document.getElementById('login-user').value = '';
+  document.getElementById('login-pass').value = '';
+  document.getElementById('main-screen').style.display = 'none';
+  document.getElementById('login-screen').style.display = 'flex';
+}
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && document.getElementById('login-screen').style.display !== 'none') {
+    handleLogin();
+  }
+  if (e.key === 'Escape') closeModal();
+});
+
+// ==========================================================
+// LOAD SUMMARY
+// ==========================================================
+async function loadSummary() {
+  const btn = document.getElementById('refresh-btn');
+  btn.disabled = true;
+  btn.textContent = '↻ Loading…';
+
+  document.getElementById('villages-tbody').innerHTML =
+    `<tr><td colspan="7" class="loading-state">
+      <span class="loading-spinner"></span> Loading villages…
+    </td></tr>`;
+
+  try {
+    const res = await apiCall({ action: 'adminSummary', token: sessionToken });
+    if (!res.ok) {
+      if (res.error && res.error.indexOf('authenticated') !== -1) {
+        toast('Session expired — please sign in again.', true);
+        setTimeout(handleLogout, 1200);
+        return;
+      }
+      toast('Load failed: ' + (res.error || 'unknown'), true);
+      return;
+    }
+    summaryData = res;
+    renderStats(res.overall);
+    renderVillages();
+    document.getElementById('last-updated').textContent =
+      'Updated: ' + new Date().toLocaleTimeString('en-IN');
+  } catch (e) {
+    toast('Network error — could not load summary.', true);
+    console.error(e);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '↻ Refresh';
+  }
+}
+
+// ==========================================================
+// RENDER OVERALL STATS
+// ==========================================================
+function renderStats(o) {
+  const pct = o.percent || 0;
+  const statsRow = document.getElementById('stats-row');
+  statsRow.innerHTML = `
+    <div class="stat-card villages">
+      <div class="label">Villages onboarded</div>
+      <div class="value">${o.villages}</div>
+      <div class="sublabel">out of 109 planned</div>
+    </div>
+    <div class="stat-card records">
+      <div class="label">Total records</div>
+      <div class="value">${fmtNum(o.total_records)}</div>
+      <div class="sublabel">across all villages</div>
+    </div>
+    <div class="stat-card filled">
+      <div class="label">Aadhaar filled</div>
+      <div class="value">${fmtNum(o.filled)}</div>
+      <div class="sublabel">${pct}% of total</div>
+    </div>
+    <div class="stat-card pending">
+      <div class="label">Pending</div>
+      <div class="value">${fmtNum(o.pending)}</div>
+      <div class="sublabel">still to collect</div>
+    </div>
+    <div class="stat-card overall">
+      <div class="label">Tehsil-wide progress</div>
+      <div class="overall-progress">
+        <div class="overall-progress-fill" style="width: ${pct}%"></div>
+      </div>
+      <div class="overall-progress-text">${pct}% complete
+        · Last activity: ${o.last_activity ? fmtRelative(o.last_activity) : 'no activity yet'}
+      </div>
+    </div>
+  `;
+}
+
+// ==========================================================
+// RENDER VILLAGES TABLE
+// ==========================================================
+function renderVillages() {
+  if (!summaryData) return;
+  const q = document.getElementById('search-box').value.trim().toLowerCase();
+  const sort = document.getElementById('sort-select').value;
+  let rows = [...summaryData.villages];
+
+  if (q) {
+    rows = rows.filter(v =>
+      String(v.village).toLowerCase().includes(q) ||
+      String(v.village_code).includes(q)
+    );
+  }
+
+  const sorters = {
+    percent_asc:       (a, b) => a.percent - b.percent,
+    percent_desc:      (a, b) => b.percent - a.percent,
+    name_asc:          (a, b) => a.village.localeCompare(b.village),
+    name_desc:         (a, b) => b.village.localeCompare(a.village),
+    pending_desc:      (a, b) => b.pending - a.pending,
+    last_updated_desc: (a, b) => {
+      const la = a.last_updated ? new Date(a.last_updated).getTime() : 0;
+      const lb = b.last_updated ? new Date(b.last_updated).getTime() : 0;
+      return lb - la;
+    }
+  };
+  rows.sort(sorters[sort] || sorters.percent_asc);
+
+  const tbody = document.getElementById('villages-tbody');
+  if (rows.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="7" class="empty-state">
+      ${summaryData.villages.length === 0
+        ? 'No villages onboarded yet — import village tabs into the master spreadsheet.'
+        : 'No villages match your search.'}
+    </td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = rows.map((v, i) => {
+    const pct = v.percent;
+    const cls = pct >= 75 ? 'done' : pct >= 30 ? 'midway' : 'low';
+    const stale = v.last_updated && (Date.now() - new Date(v.last_updated).getTime()) > 7 * 86400 * 1000;
+    return `
+      <tr onclick="openVillageDetail('${escapeAttr(v.village_code)}', '${escapeAttr(v.village)}')">
+        <td>${i + 1}</td>
+        <td>
+          <span class="village-name">${escapeHtml(v.village)}</span>
+          <span class="village-code">Code ${escapeHtml(v.village_code)}</span>
+        </td>
+        <td class="num-cell">${fmtNum(v.total)}</td>
+        <td class="num-cell" style="color: #2E7D32; font-weight: 700;">${fmtNum(v.filled)}</td>
+        <td class="num-cell" style="color: #C65911; font-weight: 700;">${fmtNum(v.pending)}</td>
+        <td class="progress-cell">
+          <div class="progress-bar-mini">
+            <div class="progress-fill-mini ${cls}" style="width: ${pct}%"></div>
+          </div>
+          <span class="progress-pct">${pct}%</span>
+        </td>
+        <td class="hide-mobile last-activity ${stale ? 'stale' : ''}">
+          ${v.last_updated ? fmtRelative(v.last_updated) : '—'}
+        </td>
+      </tr>
+    `;
+  }).join('');
+}
+
+// ==========================================================
+// VILLAGE DETAIL MODAL
+// ==========================================================
+async function openVillageDetail(code, name) {
+  document.getElementById('modal-village-name').textContent = name + ' · Code ' + code;
+  document.getElementById('modal-body').innerHTML =
+    `<div class="loading-state"><span class="loading-spinner"></span> Loading detail…</div>`;
+  document.getElementById('detail-modal').classList.add('active');
+
+  try {
+    const res = await apiCall({
+      action: 'adminVillageDetail',
+      token: sessionToken,
+      village_code: code
+    });
+    if (!res.ok) {
+      document.getElementById('modal-body').innerHTML =
+        `<div class="empty-state">Failed to load: ${escapeHtml(res.error || 'unknown')}</div>`;
+      return;
+    }
+    renderVillageDetail(res, code, name);
+  } catch (e) {
+    document.getElementById('modal-body').innerHTML =
+      `<div class="empty-state">Network error.</div>`;
+    console.error(e);
+  }
+}
+
+function renderVillageDetail(data, code, name) {
+  const records = data.records || [];
+  const total   = records.length;
+  const filled  = records.filter(r => r.aadhaar).length;
+  const pending = total - filled;
+  const pct     = total ? Math.round((filled / total) * 100) : 0;
+
+  const workers = Object.entries(data.by_worker || {})
+    .sort((a, b) => b[1] - a[1]);
+
+  const recentEntries = records
+    .filter(r => r.entered_at)
+    .sort((a, b) => new Date(b.entered_at).getTime() - new Date(a.entered_at).getTime())
+    .slice(0, 10);
+
+  document.getElementById('modal-body').innerHTML = `
+    <div class="modal-stats">
+      <div class="modal-stat">
+        <div class="label">Total</div><div class="value">${total}</div>
+      </div>
+      <div class="modal-stat">
+        <div class="label">Filled</div>
+        <div class="value" style="color: #2E7D32;">${filled}</div>
+      </div>
+      <div class="modal-stat">
+        <div class="label">Pending</div>
+        <div class="value" style="color: #C65911;">${pending}</div>
+      </div>
+      <div class="modal-stat">
+        <div class="label">Progress</div>
+        <div class="value">${pct}%</div>
+      </div>
+    </div>
+
+    <div class="modal-section-title">Contribution by worker</div>
+    ${workers.length === 0
+      ? '<div class="empty-state" style="padding: 20px;">No entries yet for this village.</div>'
+      : `<table class="worker-table">
+          <thead><tr><th>Worker (username)</th><th class="num">Rows filled</th><th class="num">Share</th></tr></thead>
+          <tbody>
+            ${workers.map(([user, count]) => `
+              <tr>
+                <td><strong>${escapeHtml(user)}</strong></td>
+                <td class="num">${count}</td>
+                <td class="num">${Math.round((count / filled) * 100)}%</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>`
+    }
+
+    ${recentEntries.length > 0 ? `
+      <div class="modal-section-title">Recent entries</div>
+      <table class="worker-table">
+        <thead><tr><th>Sr. No.</th><th>Owner</th><th>By</th><th>When</th></tr></thead>
+        <tbody>
+          ${recentEntries.map(r => `
+            <tr>
+              <td>${r.sr_no}</td>
+              <td>${escapeHtml(r.owner || '')}</td>
+              <td>${escapeHtml(r.entered_by || '')}</td>
+              <td>${fmtRelative(r.entered_at)}</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>` : ''
+    }
+  `;
+}
+
+function closeModal() {
+  document.getElementById('detail-modal').classList.remove('active');
+}
+
+// ==========================================================
+// API
+// ==========================================================
+async function apiCall(payload) {
+  const res = await fetch(APPS_SCRIPT_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify(payload),
+    redirect: 'follow'
+  });
+  return await res.json();
+}
+
+// ==========================================================
+// UTILITIES
+// ==========================================================
+function fmtNum(n) {
+  return (n || 0).toLocaleString('en-IN');
+}
+
+function fmtRelative(iso) {
+  if (!iso) return '';
+  const then = new Date(iso).getTime();
+  const now = Date.now();
+  const s = Math.round((now - then) / 1000);
+  if (s < 60)    return 'just now';
+  if (s < 3600)  return Math.floor(s / 60) + 'm ago';
+  if (s < 86400) return Math.floor(s / 3600) + 'h ago';
+  if (s < 604800) return Math.floor(s / 86400) + 'd ago';
+  return new Date(iso).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+}
+
+function escapeHtml(s) {
+  return String(s ?? '')
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
+function escapeAttr(s) {
+  return String(s ?? '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+}
+
+function toast(msg, isError) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.toggle('error', !!isError);
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2400);
+}
+
+// ==========================================================
+// EVENT BINDINGS
+// ==========================================================
+document.getElementById('search-box').addEventListener('input', renderVillages);
+document.getElementById('sort-select').addEventListener('change', renderVillages);
+document.getElementById('detail-modal').addEventListener('click', (e) => {
+  if (e.target.id === 'detail-modal') closeModal();
+});
+</script>
+</body>
+</html>
