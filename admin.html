@@ -148,6 +148,28 @@
   .inline-in:focus{outline:none; border-color:var(--forest);
     box-shadow:0 0 0 3px rgba(20,83,45,.1)}
 
+  .rbar{height:8px; background:var(--line); overflow:hidden; min-width:90px}
+  .rbar span{display:block; height:100%; background:var(--amber)}
+  .issue{background:#fff; border:1px solid var(--line);
+    border-left:3px solid var(--amber); padding:14px 16px; margin-bottom:10px}
+  .issue.clean{border-left-color:var(--forest)}
+  .issue .h{font-weight:600; color:var(--ink); font-size:14.5px}
+  .issue .d{font-size:13.5px; color:var(--body); margin-top:3px}
+  .chips{display:flex; gap:6px; flex-wrap:wrap; margin-top:7px}
+  .chip{font-size:12px; background:#f1f5f9; border:1px solid var(--line);
+    padding:2px 9px; color:var(--body)}
+  details.teh-d{background:#fff; border:1px solid var(--line); margin-bottom:10px}
+  details.teh-d>summary{padding:13px 16px; cursor:pointer; list-style:none;
+    display:flex; align-items:center; gap:12px; flex-wrap:wrap}
+  details.teh-d>summary::-webkit-details-marker{display:none}
+  details.teh-d>summary::before{content:'+'; color:var(--amber); font-weight:700;
+    font-family:var(--font-mono)}
+  details.teh-d[open]>summary::before{content:'\2212'}
+  details.teh-d>summary:hover{background:#f8fafc}
+  details.teh-d .tn{font-family:var(--font-display); font-weight:500; font-size:16px;
+    color:var(--ink)}
+  details.teh-d .tc{font-size:12.5px; color:var(--muted); margin-left:auto}
+  details.teh-d .inner{padding:0 16px 14px}
   .ov{display:none; position:fixed; inset:0; background:rgba(15,23,42,.55); z-index:100;
     align-items:center; justify-content:center; padding:18px}
   .ov.on{display:flex}
@@ -216,6 +238,7 @@
   <div class="tabs"><div class="tabs-inner">
     <button class="tab on" data-p="dash"     onclick="tab('dash')">Dashboard</button>
     <button class="tab"    data-p="villages" onclick="tab('villages')">Villages &amp; submitters</button>
+    <button class="tab"    data-p="analysis" onclick="tab('analysis')">Analysis</button>
     <button class="tab"    data-p="reasons"  onclick="tab('reasons')">Pendency reasons</button>
   </div></div>
 
@@ -245,6 +268,13 @@
       </div>
 
       <div id="vil-body"><div class="loading"><span class="spin"></span>Loading…</div></div>
+    </div>
+
+    <div class="pane" id="pane-analysis">
+      <h2 class="sec">Pendency analysis</h2>
+      <p class="sec">Why Farmer IDs are still pending, and where. Also flags entries
+        that need cleaning up.</p>
+      <div id="an-body"><div class="loading"><span class="spin"></span>Loading…</div></div>
     </div>
 
     <div class="pane" id="pane-reasons">
@@ -284,11 +314,11 @@
 
 <script>
 // =========================================================
-const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycby8dUkGyZaNoLZCH23D15UZZE7DZX9tnfW4FD4rR5o18-dCYu4arnNHXwJEv0DesaJA/exec";
+const APPS_SCRIPT_URL = "PASTE_YOUR_APPS_SCRIPT_URL_HERE";
 // =========================================================
 
 let token=null, me=null;
-let dash=null, villages=[], reasons=[];
+let dash=null, villages=[], reasons=[], analysis=null;
 
 async function doLogin(){
   const u=val('u'), p=val('p'), e=document.getElementById('loginerr');
@@ -309,7 +339,7 @@ async function doLogin(){
   finally{ b.disabled=false; b.textContent='Sign in'; }
 }
 function doLogout(){
-  token=null; me=null; dash=null; villages=[]; reasons=[];
+  token=null; me=null; dash=null; villages=[]; reasons=[]; analysis=null;
   document.getElementById('u').value=''; document.getElementById('p').value='';
   document.getElementById('app').style.display='none';
   document.getElementById('login').style.display='flex';
@@ -324,6 +354,7 @@ function tab(name){
   document.querySelectorAll('.pane').forEach(p=>p.classList.toggle('on',p.id==='pane-'+name));
   if(name==='villages' && !villages.length) loadVillages();
   if(name==='reasons'  && !reasons.length)  loadReasons();
+  if(name==='analysis' && !analysis)        loadAnalysis();
 }
 
 async function loadDash(manual){
@@ -525,6 +556,135 @@ async function openVillage(name){
     document.getElementById('m-body').innerHTML='<div class="empty">Network error.</div>'; }
 }
 function closeModal(){ document.getElementById('ov').classList.remove('on'); }
+
+async function loadAnalysis(){
+  try{
+    const r=await api({action:'reasonAnalysis',token:token});
+    if(!r.ok) return fail(r);
+    analysis=r; renderAnalysis();
+  }catch(e){ console.error(e); toast('Could not load the analysis.',true); }
+}
+
+function renderAnalysis(){
+  const a=analysis, el=document.getElementById('an-body');
+  const T=a.totals||{};
+  if(!T.pending){
+    el.innerHTML='<div class="empty">No pending entries recorded yet — '+
+      'nothing to analyse. '+n(T.issued||0)+' issued so far.</div>';
+    return;
+  }
+  const max=a.overall.length? a.overall[0].count : 1;
+
+  let h='<div class="cards">'+
+    card('Records',T.records)+
+    card('Issued',T.issued,'issued')+
+    card('Pending',T.pending,'pending')+
+    card('Distinct reasons',a.overall.length)+
+  '</div>';
+
+  // ---- data-quality flags ----
+  const is=a.issues||{};
+  const flags=[];
+  if(is.noReason)  flags.push(['Pending with no reason given',is.noReason,
+    'Use the "Pending — reason missing" filter on the village page to find and fix these.']);
+  if(is.otherBlank) flags.push(['Marked "Other" but left blank',is.otherBlank,
+    'The detail box was not filled in.']);
+  if(is.staleReason) flags.push(['Using a reason no longer on the list',is.staleReason,
+    'Restore the wording under Pendency reasons, or re-enter those rows.']);
+  h+='<h2 class="sec" style="margin-top:8px">Needs attention</h2>';
+  if(!flags.length && !(is.unassigned||[]).length){
+    h+='<div class="issue clean"><div class="h">Nothing to clean up</div>'+
+       '<div class="d">Every pending entry has a valid reason, and every village '+
+       'has a submitter assigned.</div></div>';
+  }else{
+    flags.forEach(f=>{
+      h+='<div class="issue"><div class="h">'+esc(f[0])+' — '+n(f[1])+'</div>'+
+         '<div class="d">'+esc(f[2])+'</div></div>';
+    });
+    if((is.unassigned||[]).length){
+      h+='<div class="issue"><div class="h">Villages with no submitter assigned — '+
+        is.unassigned.length+'</div>'+
+        '<div class="d">Entries there are recorded as "Unassigned".</div>'+
+        '<div class="chips">'+is.unassigned.map(v=>'<span class="chip">'+esc(v)+'</span>').join('')+
+        '</div></div>';
+    }
+  }
+
+  // ---- overall ----
+  h+='<h2 class="sec" style="margin-top:22px">All tehsils</h2>'+
+     '<p class="sec">Every pending entry across the district, by reason.</p>'+
+     '<table class="tbl"><thead><tr><th>Reason</th><th class="num">Count</th>'+
+     '<th class="num">Share</th><th style="width:170px"></th></tr></thead><tbody>';
+  a.overall.forEach(r=>{
+    h+='<tr><td>'+esc(r.reason)+'</td><td class="num">'+n(r.count)+'</td>'+
+      '<td class="num">'+Math.round(r.count/T.pending*100)+'%</td>'+
+      '<td><div class="rbar"><span style="width:'+(r.count/max*100)+'%"></span></div></td></tr>';
+  });
+  h+='</tbody></table>';
+
+  // ---- free-text Other ----
+  if((a.other_texts||[]).length){
+    h+='<h2 class="sec" style="margin-top:22px">Written in under &ldquo;Other&rdquo;</h2>'+
+       '<p class="sec">If any of these keep recurring, add them as a proper reason so '+
+       'they can be counted.</p>'+
+       '<table class="tbl"><thead><tr><th>Text entered</th><th class="num">Times</th>'+
+       '<th style="width:110px"></th></tr></thead><tbody>';
+    a.other_texts.slice(0,25).forEach(o=>{
+      h+='<tr><td>'+esc(o.text)+'</td><td class="num">'+n(o.count)+'</td>'+
+        '<td><button class="btn sm ghost" onclick="promoteReason('+q(o.text)+')">'+
+        'Add as reason</button></td></tr>';
+    });
+    h+='</tbody></table>';
+  }
+
+  // ---- by tehsil ----
+  h+='<h2 class="sec" style="margin-top:22px">By tehsil</h2>'+
+     '<p class="sec">Click a tehsil to see its reason breakdown.</p>';
+  (a.by_tehsil||[]).forEach(t=>{
+    const tmax=t.reasons.length?t.reasons[0].count:1;
+    h+='<details class="teh-d"><summary><span class="tn">'+esc(t.tehsil)+'</span>'+
+      '<span class="tc">'+n(t.total)+' pending &middot; '+
+      (t.reasons[0]?esc(t.reasons[0].reason):'—')+' most common</span></summary>'+
+      '<div class="inner"><table class="tbl" style="margin:0"><thead><tr><th>Reason</th>'+
+      '<th class="num">Count</th><th class="num">Share</th><th style="width:150px"></th>'+
+      '</tr></thead><tbody>';
+    t.reasons.forEach(r=>{
+      h+='<tr><td>'+esc(r.reason)+'</td><td class="num">'+n(r.count)+'</td>'+
+        '<td class="num">'+Math.round(r.count/t.total*100)+'%</td>'+
+        '<td><div class="rbar"><span style="width:'+(r.count/tmax*100)+'%"></span></div></td></tr>';
+    });
+    h+='</tbody></table></div></details>';
+  });
+
+  // ---- by village ----
+  h+='<h2 class="sec" style="margin-top:22px">By village</h2>'+
+     '<p class="sec">Most pending first.</p>'+
+     '<table class="tbl"><thead><tr><th>Village</th><th class="hide-sm">Tehsil</th>'+
+     '<th class="num">Issued</th><th class="num">Pending</th>'+
+     '<th>Most common reason</th></tr></thead><tbody>';
+  (a.by_village||[]).forEach(v=>{
+    h+='<tr class="clickable" onclick="openVillage('+q(v.village)+')">'+
+      '<td><span class="vname">'+esc(v.village)+'</span></td>'+
+      '<td class="hide-sm">'+esc(v.tehsil)+'</td>'+
+      '<td class="num" style="color:var(--forest);font-weight:600">'+n(v.issued)+'</td>'+
+      '<td class="num" style="color:var(--amber);font-weight:600">'+n(v.pending)+'</td>'+
+      '<td>'+(v.top_reason?esc(v.top_reason.reason)+
+        ' <span class="muted">('+v.top_reason.count+')</span>':
+        '<span class="muted">—</span>')+'</td></tr>';
+  });
+  h+='</tbody></table>';
+
+  el.innerHTML=h;
+}
+
+async function promoteReason(txt){
+  try{
+    const r=await api({action:'addReason',token:token,reason:txt});
+    if(!r.ok) return toast(r.error||'Failed',true);
+    toast('Added to the reason list.');
+    reasons=[]; analysis=null; loadAnalysis();
+  }catch(e){ toast('Network error.',true); }
+}
 
 async function loadVillages(){
   try{
