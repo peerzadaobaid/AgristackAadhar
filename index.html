@@ -105,23 +105,51 @@
     font-size:12.5px; color:var(--muted)}
   .allbar .nums b{color:var(--ink); font-weight:600}
 
-  /* tehsil block */
-  .teh{margin-bottom:22px; background:#fff; border:1px solid var(--line)}
-  .teh-hd{padding:13px 16px; border-bottom:1px solid var(--line);
-    background:#fbfaf7}
-  .teh-top{display:flex; align-items:baseline; justify-content:space-between;
-    gap:12px; flex-wrap:wrap; margin-bottom:8px}
-  .teh-name{font-family:var(--font-display); font-weight:500; font-size:19px;
+  /* ---------- tehsil jump nav ---------- */
+  .jump{display:flex; gap:8px; flex-wrap:wrap; margin-bottom:20px}
+  .jump .j{display:inline-flex; align-items:center; gap:7px;
+    background:#fff; border:1px solid var(--line); padding:7px 13px;
+    font-family:inherit; font-size:13px; color:var(--body); cursor:pointer;
+    transition:border-color .15s,background .15s}
+  .jump .j:hover{background:#f8fafc}
+  .jump .j .sw{width:9px; height:9px; flex-shrink:0}
+  .jump .j .n{font-family:var(--font-display); font-weight:500; font-size:14px;
     color:var(--ink)}
+  .jump .j .c{font-size:11.5px; color:var(--muted)}
+
+  /* ---------- tehsil block ---------- */
+  .teh{margin-bottom:26px; background:#fff; border:1px solid var(--line);
+    border-left:5px solid var(--tc,var(--navy)); scroll-margin-top:16px}
+  .teh-hd{padding:15px 18px; cursor:pointer; user-select:none;
+    background:linear-gradient(90deg,var(--tcw,#f8fafc) 0%,#fff 62%);
+    border-bottom:1px solid var(--line)}
+  .teh-hd:hover{background:linear-gradient(90deg,var(--tcw,#f1f5f9) 0%,#fbfbfa 62%)}
+  .teh-top{display:flex; align-items:center; justify-content:space-between;
+    gap:12px; flex-wrap:wrap; margin-bottom:9px}
+  .teh-l{display:flex; align-items:baseline; gap:10px; flex-wrap:wrap}
+  .teh-tag{font-size:9.5px; letter-spacing:.18em; text-transform:uppercase;
+    font-weight:700; color:var(--tc,var(--navy)); opacity:.85}
+  .teh-name{font-family:var(--font-display); font-weight:600; font-size:22px;
+    color:var(--tc,var(--ink)); letter-spacing:-.01em; line-height:1.1}
   .teh-meta{font-size:12.5px; color:var(--muted)}
   .teh-meta b{color:var(--body); font-weight:600}
+  .teh-pct{font-family:var(--font-display); font-weight:600; font-size:20px;
+    color:var(--tc,var(--ink)); line-height:1}
+  .teh-pct small{display:block; font-family:var(--font-body); font-weight:500;
+    font-size:10px; letter-spacing:.14em; text-transform:uppercase;
+    color:var(--muted); margin-top:2px}
+  .teh-caret{font-family:var(--font-mono); font-size:15px; color:var(--muted);
+    transition:transform .18s; display:inline-block}
+  .teh.shut .teh-caret{transform:rotate(-90deg)}
+  .teh.shut .teh-body{display:none}
+  .teh.shut .teh-hd{border-bottom:none}
 
   .vrow{display:grid; grid-template-columns:minmax(120px,1.4fr) minmax(140px,2fr) auto;
-    gap:14px; align-items:center; padding:12px 16px;
+    gap:14px; align-items:center; padding:12px 16px 12px 18px;
     border-bottom:1px solid var(--line); text-decoration:none;
     transition:background .12s}
   .vrow:last-child{border-bottom:none}
-  .vrow:hover{background:var(--forest-soft)}
+  .vrow:hover{background:var(--tcw,#f8fafc)}
   .vrow .v{font-family:var(--font-display); font-weight:500; font-size:16px;
     color:var(--ink); line-height:1.2}
   .vrow .who{font-size:11.5px; color:var(--muted); margin-top:1px}
@@ -131,8 +159,9 @@
   .vrow .prog .lbl b{font-weight:600}
   .vrow .prog .lbl .gi{color:var(--forest)}
   .vrow .prog .lbl .ga{color:var(--amber)}
-  .vrow .go{font-family:var(--font-display); font-size:17px; color:var(--forest);
-    opacity:.35; transition:opacity .15s,transform .15s}
+  .vrow .go{font-family:var(--font-display); font-size:17px;
+    color:var(--tc,var(--forest)); opacity:.35;
+    transition:opacity .15s,transform .15s}
   .vrow:hover .go{opacity:1; transform:translateX(3px)}
 
   .state{padding:22px; text-align:center; color:var(--muted); font-size:14px;
@@ -190,6 +219,7 @@
     <input type="text" class="search" id="q" placeholder="Search by village or tehsil…"
       style="display:none">
     <div id="all"></div>
+    <div class="jump" id="jump"></div>
     <div id="dir"><div class="state"><span class="spin"></span>Loading the directory…</div></div>
     <p class="dir-foot" id="foot" style="display:none">
       <strong>Village not listed?</strong> It has to be registered by an administrator
@@ -301,29 +331,70 @@ function renderOverall(){
       '</div></div>';
 }
 
+/* A fixed palette, deliberately avoiding the green and amber used by the
+   status bars so a tehsil's colour can never be mistaken for progress.
+   Chosen by a hash of the name, so a tehsil keeps its colour as others
+   are added or removed. */
+const TCOLS = ['#1e3a5f','#6d28d9','#0f766e','#9f1239','#3730a3',
+               '#0e7490','#86198f','#475569','#1e40af','#7c2d12'];
+function tcol(name){
+  let h=0; const s=String(name);
+  for(let i=0;i<s.length;i++) h=(h*31+s.charCodeAt(i))>>>0;
+  return TCOLS[h % TCOLS.length];
+}
+function tint(hex,a){
+  const n=parseInt(hex.slice(1),16);
+  return 'rgba('+((n>>16)&255)+','+((n>>8)&255)+','+(n&255)+','+a+')';
+}
+
 function render(list){
   const el=document.getElementById('dir');
+  const jn=document.getElementById('jump');
   if(!list.length){
-    el.innerHTML='<div class="state">No village matches your search.</div>'; return;
+    el.innerHTML='<div class="state">No village matches your search.</div>';
+    jn.innerHTML=''; return;
   }
   const groups={};
   list.forEach(v=>{ const t=v.tehsil||'Unassigned'; (groups[t]=groups[t]||[]).push(v); });
+  const names=Object.keys(groups).sort();
 
-  el.innerHTML=Object.keys(groups).sort().map(t=>{
-    const vs=groups[t];
-    // roll up from the visible villages so the header matches any active search
+  // With several tehsils, start collapsed so the whole district fits on one screen
+  const collapse = names.length > 3;
+
+  jn.innerHTML = names.length>1 ? names.map(t=>{
+    const vs=groups[t], c=tcol(t);
+    const tot=vs.reduce((a,v)=>a+v.total,0);
+    const done=vs.reduce((a,v)=>a+v.issued+v.pending,0);
+    const pct=tot?Math.round(done/tot*100):0;
+    return '<button class="j" onclick="jumpTo('+jq(t)+')" '+
+      'style="border-left:3px solid '+c+'">'+
+      '<span class="sw" style="background:'+c+'"></span>'+
+      '<span class="n">'+esc(t)+'</span>'+
+      '<span class="c">'+pct+'%</span></button>';
+  }).join('') : '';
+
+  el.innerHTML=names.map(t=>{
+    const vs=groups[t], c=tcol(t);
     const tot=vs.reduce((a,v)=>a+v.total,0);
     const iss=vs.reduce((a,v)=>a+v.issued,0);
     const pen=vs.reduce((a,v)=>a+v.pending,0);
     const nd=tot-iss-pen;
     const pct=tot?Math.round((iss+pen)/tot*100):0;
 
-    return '<div class="teh">'+
-      '<div class="teh-hd">'+
+    return '<div class="teh'+(collapse?' shut':'')+'" id="t-'+slug(t)+'" '+
+      'style="--tc:'+c+'; --tcw:'+tint(c,0.07)+'">'+
+      '<div class="teh-hd" onclick="toggleTeh(this)">'+
         '<div class="teh-top">'+
-          '<span class="teh-name">'+esc(t)+'</span>'+
-          '<span class="teh-meta">'+vs.length+' village'+(vs.length===1?'':'s')+
-            ' &middot; <b>'+num(tot)+'</b> landholders &middot; <b>'+pct+'%</b> submitted</span>'+
+          '<div class="teh-l">'+
+            '<span class="teh-caret">&#9662;</span>'+
+            '<span><span class="teh-tag">Tehsil</span><br>'+
+              '<span class="teh-name">'+esc(t)+'</span></span>'+
+          '</div>'+
+          '<div style="display:flex;align-items:center;gap:18px">'+
+            '<span class="teh-meta">'+vs.length+' village'+(vs.length===1?'':'s')+
+              ' &middot; <b>'+num(tot)+'</b> landholders</span>'+
+            '<span class="teh-pct">'+pct+'%<small>submitted</small></span>'+
+          '</div>'+
         '</div>'+
         bar3(iss,pen,tot)+
         '<div class="teh-meta" style="margin-top:7px">'+
@@ -332,6 +403,7 @@ function render(list){
           '<span><b>'+num(nd)+'</b> not yet submitted</span>'+
         '</div>'+
       '</div>'+
+      '<div class="teh-body">'+
       vs.map(v=>
         '<a class="vrow" href="'+esc(slug(v.village))+'.html">'+
           '<div><div class="v">'+esc(v.village)+'</div>'+
@@ -344,9 +416,22 @@ function render(list){
             '</div></div>'+
           '<div class="go">&rarr;</div>'+
         '</a>').join('')+
-    '</div>';
+      '</div></div>';
   }).join('');
 }
+
+function toggleTeh(hd){ hd.parentElement.classList.toggle('shut'); }
+
+function jumpTo(t){
+  const el=document.getElementById('t-'+slug(t));
+  if(!el) return;
+  el.classList.remove('shut');
+  if(el.scrollIntoView) el.scrollIntoView({behavior:'smooth',block:'start'});
+  else window.location.hash='t-'+slug(t);
+}
+
+function jq(s){ return '&quot;'+String(s==null?'':s)
+  .replace(/\\/g,'\\\\').replace(/"/g,'\\&quot;')+'&quot;'; }
 
 function bar3(i,p,total){
   const iw=total?i/total*100:0, pw=total?p/total*100:0;
